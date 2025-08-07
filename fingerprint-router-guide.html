@@ -1,0 +1,2503 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FingerprintRouter - Полное руководство</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --text: #e5e7eb;
+            --card-bg: rgba(31, 41, 55, 0.8);
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            animation: float 20s infinite ease-in-out;
+            top: -200px;
+            left: -200px;
+        }
+
+        .bg-animation::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
+            animation: float 25s infinite ease-in-out reverse;
+            bottom: -300px;
+            right: -300px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(100px, -100px) rotate(120deg); }
+            66% { transform: translate(-100px, 100px) rotate(240deg); }
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        nav a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(99, 102, 241, 0.1);
+            transition: left 0.3s;
+        }
+
+        nav a:hover::before {
+            left: 0;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(99, 102, 241, 0.2);
+            z-index: -1;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .progress-step.active .step-circle {
+            background: var(--gradient);
+            border-color: transparent;
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .progress-step.completed .step-circle {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .step-label {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            text-align: center;
+            max-width: 100px;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .step-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient);
+            transition: left 0.5s;
+        }
+
+        .card:hover::before {
+            left: 0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin: 1.5rem 0 1rem;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: #0f172a;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .code-lang {
+            color: var(--primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        pre {
+            color: #e2e8f0;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        /* Alert Boxes */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Terminal */
+        .terminal {
+            background: #000;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Fira Code', monospace;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #28ca42; }
+
+        .terminal-content {
+            color: #0f0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .terminal-prompt {
+            color: #0f0;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: #0f0;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .tab.active::after,
+        .tab:hover::after {
+            transform: scaleX(1);
+        }
+
+        .tab.active {
+            color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .progress-bar {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .progress-bar::before {
+                width: 2px;
+                height: 100%;
+                left: 20px;
+                top: 0;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Checkbox */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            appearance: none;
+            border: 2px solid var(--primary);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .checkbox:checked {
+            background: var(--gradient);
+            border-color: transparent;
+        }
+
+        .checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Installation Progress */
+        .install-progress {
+            margin: 2rem 0;
+        }
+
+        .install-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .install-step.completed {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .install-step.active {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+        }
+
+        .step-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-status.completed {
+            background: var(--success);
+        }
+
+        .step-status.active {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">🔐</div>
+                <span>FingerprintRouter Pro</span>
+            </div>
+            <nav>
+                <a href="#overview">Обзор</a>
+                <a href="#requirements">Требования</a>
+                <a href="#installation">Установка</a>
+                <a href="#configuration">Настройка</a>
+                <a href="#usage">Использование</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-step active" onclick="showStep(1)">
+                <div class="step-circle">1</div>
+                <div class="step-label">Подготовка среды</div>
+            </div>
+            <div class="progress-step" onclick="showStep(2)">
+                <div class="step-circle">2</div>
+                <div class="step-label">Установка VMware</div>
+            </div>
+            <div class="progress-step" onclick="showStep(3)">
+                <div class="step-circle">3</div>
+                <div class="step-label">Настройка Ubuntu</div>
+            </div>
+            <div class="progress-step" onclick="showStep(4)">
+                <div class="step-circle">4</div>
+                <div class="step-label">Установка роутера</div>
+            </div>
+            <div class="progress-step" onclick="showStep(5)">
+                <div class="step-circle">5</div>
+                <div class="step-label">Конфигурация</div>
+            </div>
+            <div class="progress-step" onclick="showStep(6)">
+                <div class="step-circle">6</div>
+                <div class="step-label">Интеграция прокси</div>
+            </div>
+            <div class="progress-step" onclick="showStep(7)">
+                <div class="step-circle">7</div>
+                <div class="step-label">Запуск системы</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Step 1: Подготовка среды -->
+        <div class="step-content active" id="step-1">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🚀</div>
+                    <h2>Подготовка среды и системные требования</h2>
+                </div>
+
+                <div class="alert alert-info">
+                    💡 Система подмены отпечатков работает на уровнях L4 (TCP), L6 (TLS/JA3) и L7 (HTTP/2) модели OSI
+                </div>
+
+                <h3>🖥️ Минимальные системные требования</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">💻</div>
+                        <div class="feature-title">Процессор</div>
+                        <div>4+ ядра, поддержка виртуализации (VT-x/AMD-V)</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <div class="feature-title">Оперативная память</div>
+                        <div>16 GB RAM (8 GB для VM)</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💾</div>
+                        <div class="feature-title">Дисковое пространство</div>
+                        <div>50 GB свободного места SSD</div>
+                    </div>
+                </div>
+
+                <h3>📦 Необходимое ПО для скачивания</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Downloads</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>1. VMware Workstation Pro 17: https://www.vmware.com/products/workstation-pro/
+2. Ubuntu Server 22.04 LTS ISO: https://ubuntu.com/download/server
+3. Python 3.10+: https://www.python.org/downloads/
+4. Git: https://git-scm.com/downloads
+5. Visual Studio Code: https://code.visualstudio.com/</pre>
+                </div>
+
+                <div class="alert alert-warning">
+                    ⚠️ Убедитесь, что в BIOS включена виртуализация (Intel VT-x или AMD-V)
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep(2)">
+                    Далее: Установка VMware →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Установка VMware -->
+        <div class="step-content" id="step-2">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🔧</div>
+                    <h2>Установка и настройка VMware Workstation</h2>
+                </div>
+
+                <h3>📥 Установка VMware</h3>
+                <div class="install-progress">
+                    <div class="install-step">
+                        <div class="step-status">1</div>
+                        <div>Скачайте VMware Workstation Pro с официального сайта</div>
+                    </div>
+                    <div class="install-step">
+                        <div class="step-status">2</div>
+                        <div>Запустите установщик с правами администратора</div>
+                    </div>
+                    <div class="install-step">
+                        <div class="step-status">3</div>
+                        <div>Выберите "Enhanced Keyboard Driver" при установке</div>
+                    </div>
+                    <div class="install-step">
+                        <div class="step-status">4</div>
+                        <div>Введите лицензионный ключ или используйте trial версию</div>
+                    </div>
+                </div>
+
+                <h3>🆕 Создание виртуальной машины</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">VMware Configuration</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre># Параметры виртуальной машины
+Name: FingerprintRouter
+Type: Linux
+Version: Ubuntu 64-bit
+Memory: 8192 MB
+Processors: 4 cores
+Hard Disk: 50 GB (динамический)
+Network: NAT + Host-only
+
+# Дополнительные настройки
+✓ Enable virtualization inside VM
+✓ Enable IOMMU
+✓ Disable side channel mitigations</pre>
+                </div>
+
+                <h3>🔌 Настройка сети</h3>
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab(event, 'network-nat')">NAT Network</button>
+                    <button class="tab" onclick="showTab(event, 'network-host')">Host-Only</button>
+                    <button class="tab" onclick="showTab(event, 'network-bridge')">Bridged</button>
+                </div>
+
+                <div class="tab-content active" id="network-nat">
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-dot red"></div>
+                            <div class="terminal-dot yellow"></div>
+                            <div class="terminal-dot green"></div>
+                        </div>
+                        <div class="terminal-content">
+                            <span class="terminal-prompt">vmware@config:~$</span> Edit → Virtual Network Editor<br>
+                            <span class="terminal-prompt">vmware@config:~$</span> VMnet8 (NAT) Settings:<br>
+                            Subnet IP: 192.168.100.0<br>
+                            Subnet Mask: 255.255.255.0<br>
+                            Gateway: 192.168.100.2<br>
+                            DHCP: 192.168.100.128 - 192.168.100.254<span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="network-host">
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-dot red"></div>
+                            <div class="terminal-dot yellow"></div>
+                            <div class="terminal-dot green"></div>
+                        </div>
+                        <div class="terminal-content">
+                            <span class="terminal-prompt">vmware@config:~$</span> VMnet1 (Host-Only) Settings:<br>
+                            Subnet IP: 192.168.200.0<br>
+                            Subnet Mask: 255.255.255.0<br>
+                            DHCP: Disabled<br>
+                            Host IP: 192.168.200.1<span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="network-bridge">
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <div class="terminal-dot red"></div>
+                            <div class="terminal-dot yellow"></div>
+                            <div class="terminal-dot green"></div>
+                        </div>
+                        <div class="terminal-content">
+                            <span class="terminal-prompt">vmware@config:~$</span> Bridged Network Settings:<br>
+                            Automatic bridging: Disabled<br>
+                            Bridge to: Ethernet adapter<br>
+                            Replicate physical state: Enabled<span class="terminal-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep(3)">
+                    Далее: Установка Ubuntu →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Настройка Ubuntu -->
+        <div class="step-content" id="step-3">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🐧</div>
+                    <h2>Установка и базовая настройка Ubuntu Server</h2>
+                </div>
+
+                <h3>💿 Установка Ubuntu Server 22.04</h3>
+                <div class="alert alert-info">
+                    💡 Используем Server версию для максимальной производительности
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Bash - Initial Setup</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre># Обновление системы
+sudo apt update && sudo apt upgrade -y
+
+# Установка необходимых пакетов
+sudo apt install -y \
+    build-essential \
+    python3-pip \
+    python3-dev \
+    git \
+    curl \
+    wget \
+    net-tools \
+    iptables \
+    iproute2 \
+    tcpdump \
+    nginx \
+    redis-server \
+    supervisor
+
+# Установка Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Настройка Python окружения
+sudo pip3 install virtualenv
+mkdir ~/fingerprint-router
+cd ~/fingerprint-router
+virtualenv venv
+source venv/bin/activate</pre>
+                </div>
+
+                <h3>🔒 Настройка сетевой безопасности</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Bash - Network Configuration</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre># Настройка netplan
+sudo nano /etc/netplan/00-installer-config.yaml
+
+# Содержимое файла:
+network:
+  version: 2
+  ethernets:
+    ens33:  # NAT interface
+      dhcp4: true
+    ens34:  # Host-only interface
+      addresses:
+        - 192.168.200.10/24
+      routes:
+        - to: default
+          via: 192.168.200.1
+
+# Применение настроек
+sudo netplan apply
+
+# Включение IP forwarding
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf</pre>
+                </div>
+
+                <h3>⚙️ Оптимизация системы</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Bash - System Optimization</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre># Настройка лимитов системы
+sudo nano /etc/security/limits.conf
+
+# Добавить в конец файла:
+* soft nofile 65535
+* hard nofile 65535
+* soft nproc 32768
+* hard nproc 32768
+
+# Оптимизация сетевого стека
+sudo nano /etc/sysctl.conf
+
+# Добавить параметры:
+net.core.somaxconn = 65535
+net.core.netdev_max_backlog = 65536
+net.ipv4.tcp_max_syn_backlog = 65536
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_keepalive_time = 300
+net.ipv4.tcp_max_tw_buckets = 2000000
+net.ipv4.tcp_syncookies = 1
+
+# Применить настройки
+sudo sysctl -p</pre>
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep(4)">
+                    Далее: Установка роутера →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Установка роутера -->
+        <div class="step-content" id="step-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🚦</div>
+                    <h2>Установка многопоточного роутера отпечатков</h2>
+                </div>
+
+                <h3>📂 Структура проекта</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Project Structure</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>fingerprint-router/
+├── core/
+│   ├── __init__.py
+│   ├── tcp_handler.py      # TCP отпечатки (L4)
+│   ├── tls_handler.py      # JA3 отпечатки (L6)
+│   ├── http2_handler.py    # HTTP/2 отпечатки (L7)
+│   └── proxy_manager.py    # Управление прокси
+├── profiles/
+│   ├── tcp_profiles.json   # TCP профили ОС
+│   ├── ja3_profiles.json   # JA3 профили браузеров
+│   └── h2_profiles.json    # HTTP/2 профили
+├── config/
+│   ├── settings.py
+│   └── proxies.txt
+├── api/
+│   ├── rest_api.py
+│   └── websocket.py
+├── utils/
+│   ├── logger.py
+│   └── monitor.py
+├── requirements.txt
+└── main.py</pre>
+                </div>
+
+                <h3>🔧 Установка зависимостей</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">requirements.txt</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre># Core dependencies
+scapy==2.5.0
+mitmproxy==10.1.5
+pyOpenSSL==23.3.0
+cryptography==41.0.7
+h2==4.1.0
+hpack==4.0.0
+
+# Async and threading
+asyncio==3.4.3
+aiohttp==3.9.1
+uvloop==0.19.0
+
+# Web framework
+fastapi==0.104.1
+uvicorn==0.24.0
+websockets==12.0
+
+# Monitoring
+prometheus-client==0.19.0
+psutil==5.9.6
+
+# Utils
+python-dotenv==1.0.0
+colorama==0.4.6
+loguru==0.7.2</pre>
+                </div>
+
+                <h3>💻 Основной код роутера</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - main.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>#!/usr/bin/env python3
+"""
+FingerprintRouter - Многопоточный роутер подмены отпечатков
+Поддержка: TCP (L4), JA3 (L6), HTTP/2 (L7)
+"""
+
+import asyncio
+import uvloop
+from loguru import logger
+from core.tcp_handler import TCPHandler
+from core.tls_handler import TLSHandler
+from core.http2_handler import HTTP2Handler
+from core.proxy_manager import ProxyManager
+from api.rest_api import create_app
+from config.settings import Settings
+
+class FingerprintRouter:
+    def __init__(self):
+        self.settings = Settings()
+        self.tcp_handler = TCPHandler()
+        self.tls_handler = TLSHandler()
+        self.http2_handler = HTTP2Handler()
+        self.proxy_manager = ProxyManager()
+        
+        logger.info("🚀 FingerprintRouter инициализирован")
+        
+    async def start(self):
+        """Запуск всех компонентов роутера"""
+        tasks = [
+            self.start_proxy_server(),
+            self.start_api_server(),
+            self.start_monitoring()
+        ]
+        
+        await asyncio.gather(*tasks)
+        
+    async def start_proxy_server(self):
+        """Запуск прокси сервера"""
+        server = await asyncio.start_server(
+            self.handle_client,
+            self.settings.PROXY_HOST,
+            self.settings.PROXY_PORT
+        )
+        
+        logger.info(f"🔌 Прокси сервер запущен на {self.settings.PROXY_HOST}:{self.settings.PROXY_PORT}")
+        
+        async with server:
+            await server.serve_forever()
+            
+    async def handle_client(self, reader, writer):
+        """Обработка клиентского соединения"""
+        client_addr = writer.get_extra_info('peername')
+        logger.debug(f"📥 Новое соединение от {client_addr}")
+        
+        try:
+            # Получение прокси из пула
+            proxy = await self.proxy_manager.get_proxy()
+            
+            # Создание туннеля через прокси
+            upstream = await self.create_upstream_connection(proxy)
+            
+            # Запуск обработчиков
+            await asyncio.gather(
+                self.process_client_to_upstream(reader, upstream, proxy),
+                self.process_upstream_to_client(upstream, writer)
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка обработки: {e}")
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+if __name__ == "__main__":
+    # Использование uvloop для максимальной производительности
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    
+    router = FingerprintRouter()
+    asyncio.run(router.start())</pre>
+                </div>
+
+                <h3>🔐 TCP Handler Implementation</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - tcp_handler.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>from scapy.all import *
+import json
+from loguru import logger
+
+class TCPHandler:
+    def __init__(self):
+        self.profiles = self.load_profiles()
+        self.current_profile = "windows_10"
+        
+    def load_profiles(self):
+        """Загрузка TCP профилей различных ОС"""
+        return {
+            "windows_10": {
+                "ttl": 128,
+                "window_size": 65535,
+                "mss": 1420,
+                "window_scale": 8,
+                "sack_permitted": True,
+                "timestamps": True,
+                "tcp_options_order": ["MSS", "NOP", "WScale", "NOP", "NOP", "SAckOK"]
+            },
+            "macos": {
+                "ttl": 64,
+                "window_size": 65535,
+                "mss": 1460,
+                "window_scale": 6,
+                "sack_permitted": True,
+                "timestamps": True,
+                "tcp_options_order": ["MSS", "NOP", "WScale", "SAckOK", "Timestamp"]
+            },
+            "android": {
+                "ttl": 64,
+                "window_size": 65535,
+                "mss": 1380,
+                "window_scale": 7,
+                "sack_permitted": True,
+                "timestamps": True,
+                "tcp_options_order": ["MSS", "SAckOK", "Timestamp", "NOP", "WScale"]
+            },
+            "ios": {
+                "ttl": 64,
+                "window_size": 65535,
+                "mss": 1348,
+                "window_scale": 12,
+                "sack_permitted": True,
+                "timestamps": True,
+                "tcp_options_order": ["MSS", "NOP", "WScale", "SAckOK", "Timestamp"]
+            }
+        }
+        
+    def modify_packet(self, packet_data, profile_name=None):
+        """Модификация TCP пакета согласно профилю"""
+        if profile_name:
+            self.current_profile = profile_name
+            
+        profile = self.profiles[self.current_profile]
+        
+        try:
+            packet = IP(packet_data)
+            
+            if packet.haslayer(TCP):
+                # Модификация TTL
+                packet[IP].ttl = profile["ttl"]
+                
+                # Модификация TCP параметров
+                tcp_layer = packet[TCP]
+                tcp_layer.window = profile["window_size"]
+                
+                # Модификация TCP опций для SYN пакетов
+                if tcp_layer.flags & 0x02:  # SYN flag
+                    tcp_options = []
+                    
+                    for option in profile["tcp_options_order"]:
+                        if option == "MSS":
+                            tcp_options.append(("MSS", profile["mss"]))
+                        elif option == "WScale":
+                            tcp_options.append(("WScale", profile["window_scale"]))
+                        elif option == "SAckOK":
+                            tcp_options.append(("SAckOK", b""))
+                        elif option == "Timestamp":
+                            tcp_options.append(("Timestamp", (0, 0)))
+                        elif option == "NOP":
+                            tcp_options.append(("NOP", None))
+                            
+                    tcp_layer.options = tcp_options
+                
+                # Пересчет контрольных сумм
+                del packet[IP].chksum
+                del packet[TCP].chksum
+                
+                logger.debug(f"✅ TCP пакет модифицирован: {self.current_profile}")
+                return bytes(packet)
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка модификации TCP: {e}")
+            return packet_data</pre>
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep(5)">
+                    Далее: Конфигурация →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 5: Конфигурация -->
+        <div class="step-content" id="step-5">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">⚙️</div>
+                    <h2>Конфигурация системы</h2>
+                </div>
+
+                <h3>🎯 JA3 Handler - Подмена TLS отпечатков</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - tls_handler.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>import ssl
+import struct
+import hashlib
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+import random
+
+class TLSHandler:
+    def __init__(self):
+        self.ja3_profiles = self.load_ja3_profiles()
+        self.grease_values = [0x0a0a, 0x1a1a, 0x2a2a, 0x3a3a, 0x4a4a, 0x5a5a, 0x6a6a, 0x7a7a, 0x8a8a, 0x9a9a, 0xaaaa, 0xbaba, 0xcaca, 0xdada, 0xeaea, 0xfafa]
+        
+    def load_ja3_profiles(self):
+        """Загрузка JA3 профилей популярных браузеров"""
+        return {
+            "chrome_120": {
+                "version": 0x0303,  # TLS 1.2
+                "ciphers": [
+                    0x1301, 0x1302, 0x1303,  # TLS 1.3 ciphers
+                    0xc02b, 0xc02f, 0xc02c, 0xc030,  # ECDHE ciphers
+                    0xcca9, 0xcca8, 0xc013, 0xc014
+                ],
+                "extensions": [
+                    0x0000,  # server_name
+                    0x0017,  # extended_master_secret
+                    0x0010,  # alpn
+                    0x0005,  # status_request
+                    0x0023,  # session_ticket
+                    0x0033,  # key_share
+                    0x002b,  # supported_versions
+                    0x002d,  # psk_key_exchange_modes
+                    0x0043,  # supported_groups
+                    0x000a,  # supported_groups (elliptic_curves)
+                    0x000b,  # ec_point_formats
+                    0x0015,  # padding
+                ],
+                "curves": [0x001d, 0x0017, 0x001e, 0x0019, 0x0018],
+                "use_grease": True
+            },
+            "firefox_121": {
+                "version": 0x0303,
+                "ciphers": [
+                    0x1301, 0x1303, 0x1302,
+                    0xc02b, 0xc02f, 0xc030, 0xc02c,
+                    0xc013, 0xc014, 0x009c, 0x009d
+                ],
+                "extensions": [
+                    0x0000, 0x0023, 0x0010, 0x0005,
+                    0x000d, 0x0012, 0x0033, 0x002d,
+                    0x002b, 0x001b, 0x0015
+                ],
+                "curves": [0x001d, 0x0017, 0x0018, 0x0019],
+                "use_grease": False
+            },
+            "safari_17": {
+                "version": 0x0303,
+                "ciphers": [
+                    0x1301, 0x1302, 0x1303,
+                    0xc02c, 0xc02b, 0xcca9, 0xc030,
+                    0xc02f, 0xcca8, 0xc00a
+                ],
+                "extensions": [
+                    0x0000, 0x000a, 0x000b, 0x000d,
+                    0x0010, 0x0017, 0x0023, 0x002b,
+                    0x002d, 0x0033, 0x0005
+                ],
+                "curves": [0x001d, 0x0017, 0x0018],
+                "use_grease": False
+            }
+        }
+        
+    def build_client_hello(self, profile_name="chrome_120", server_name="example.com"):
+        """Построение ClientHello пакета с заданным JA3"""
+        profile = self.ja3_profiles[profile_name]
+        
+        # TLS Record Layer
+        content_type = 0x16  # Handshake
+        tls_version = 0x0301  # TLS 1.0 (legacy)
+        
+        # Handshake Protocol
+        handshake_type = 0x01  # ClientHello
+        
+        # ClientHello структура
+        client_version = profile["version"]
+        
+        # Random (32 bytes)
+        random_bytes = os.urandom(32)
+        
+        # Session ID (пустой)
+        session_id = b""
+        
+        # Cipher Suites
+        ciphers = profile["ciphers"].copy()
+        
+        # Добавление GREASE значений для Chrome
+        if profile["use_grease"]:
+            grease = random.choice(self.grease_values)
+            ciphers.insert(0, grease)
+            ciphers.insert(len(ciphers)//2, random.choice(self.grease_values))
+        
+        # Extensions
+        extensions = self.build_extensions(profile, server_name)
+        
+        # Сборка ClientHello
+        client_hello = struct.pack("!H", client_version)
+        client_hello += random_bytes
+        client_hello += struct.pack("!B", len(session_id)) + session_id
+        
+        # Cipher suites
+        cipher_bytes = b"".join([struct.pack("!H", c) for c in ciphers])
+        client_hello += struct.pack("!H", len(cipher_bytes)) + cipher_bytes
+        
+        # Compression methods (null)
+        client_hello += struct.pack("!BB", 1, 0)
+        
+        # Extensions
+        client_hello += struct.pack("!H", len(extensions)) + extensions
+        
+        # Handshake message
+        handshake_msg = struct.pack("!B", handshake_type)
+        handshake_msg += struct.pack("!I", len(client_hello))[1:]  # 3 bytes length
+        handshake_msg += client_hello
+        
+        # TLS Record
+        tls_record = struct.pack("!BHH", content_type, tls_version, len(handshake_msg))
+        tls_record += handshake_msg
+        
+        return tls_record
+        
+    def calculate_ja3_hash(self, client_hello):
+        """Вычисление JA3 хеша из ClientHello"""
+        # Парсинг ClientHello и извлечение параметров
+        # Формат: SSLVersion,Ciphers,Extensions,Curves,PointFormats
+        
+        ja3_string = f"{version},{ciphers},{extensions},{curves},{point_formats}"
+        ja3_hash = hashlib.md5(ja3_string.encode()).hexdigest()
+        
+        logger.info(f"🔑 JA3 Hash: {ja3_hash}")
+        return ja3_hash</pre>
+                </div>
+
+                <h3>🌐 HTTP/2 Handler - Подмена Akamai отпечатков</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - http2_handler.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>import h2.connection
+import h2.config
+from h2.events import *
+import struct
+
+class HTTP2Handler:
+    def __init__(self):
+        self.h2_profiles = self.load_h2_profiles()
+        self.current_profile = "chrome_120"
+        
+    def load_h2_profiles(self):
+        """Загрузка HTTP/2 профилей (Akamai fingerprints)"""
+        return {
+            "chrome_120": {
+                "settings": {
+                    "HEADER_TABLE_SIZE": 65536,
+                    "ENABLE_PUSH": 0,
+                    "MAX_CONCURRENT_STREAMS": None,
+                    "INITIAL_WINDOW_SIZE": 6291456,
+                    "MAX_FRAME_SIZE": 16384,
+                    "MAX_HEADER_LIST_SIZE": 262144
+                },
+                "window_update": 15663105,
+                "priority_frames": True,
+                "settings_order": [1, 2, 4, 6],
+                "pseudo_headers_order": ["m", "a", "s", "p"]
+            },
+            "firefox_121": {
+                "settings": {
+                    "HEADER_TABLE_SIZE": 65536,
+                    "INITIAL_WINDOW_SIZE": 131072,
+                    "MAX_FRAME_SIZE": 16384
+                },
+                "window_update": 12517377,
+                "priority_frames": False,
+                "settings_order": [1, 4, 5],
+                "pseudo_headers_order": ["m", "p", "a", "s"]
+            },
+            "safari_17": {
+                "settings": {
+                    "HEADER_TABLE_SIZE": 4096,
+                    "ENABLE_PUSH": 0,
+                    "INITIAL_WINDOW_SIZE": 4194304,
+                    "MAX_CONCURRENT_STREAMS": 100
+                },
+                "window_update": 10485760,
+                "priority_frames": False,
+                "settings_order": [2, 4, 3],
+                "pseudo_headers_order": ["m", "s", "p", "a"]
+            }
+        }
+        
+    def create_settings_frame(self, profile_name=None):
+        """Создание SETTINGS фрейма согласно профилю"""
+        if profile_name:
+            self.current_profile = profile_name
+            
+        profile = self.h2_profiles[self.current_profile]
+        settings = profile["settings"]
+        
+        # HTTP/2 SETTINGS frame
+        frame_type = 0x04
+        flags = 0x00
+        stream_id = 0x00
+        
+        # Build settings payload
+        payload = b""
+        
+        # Следуем порядку из профиля
+        settings_map = {
+            1: "HEADER_TABLE_SIZE",
+            2: "ENABLE_PUSH", 
+            3: "MAX_CONCURRENT_STREAMS",
+            4: "INITIAL_WINDOW_SIZE",
+            5: "MAX_FRAME_SIZE",
+            6: "MAX_HEADER_LIST_SIZE"
+        }
+        
+        for setting_id in profile["settings_order"]:
+            setting_name = settings_map[setting_id]
+            if setting_name in settings and settings[setting_name] is not None:
+                value = settings[setting_name]
+                payload += struct.pack("!HI", setting_id, value)
+        
+        # Frame header
+        length = len(payload)
+        frame = struct.pack("!IHBB", length << 8 | frame_type, flags, stream_id)
+        frame += payload
+        
+        return frame
+        
+    def create_window_update_frame(self, stream_id=0):
+        """Создание WINDOW_UPDATE фрейма"""
+        profile = self.h2_profiles[self.current_profile]
+        
+        frame_type = 0x08
+        flags = 0x00
+        increment = profile["window_update"]
+        
+        payload = struct.pack("!I", increment & 0x7FFFFFFF)
+        length = len(payload)
+        
+        frame = struct.pack("!IHBB", length << 8 | frame_type, flags, stream_id)
+        frame += payload
+        
+        return frame
+        
+    def reorder_headers(self, headers):
+        """Переупорядочивание заголовков согласно профилю"""
+        profile = self.h2_profiles[self.current_profile]
+        order = profile["pseudo_headers_order"]
+        
+        # Разделение на pseudo-headers и обычные
+        pseudo_headers = {}
+        regular_headers = {}
+        
+        for name, value in headers.items():
+            if name.startswith(":"):
+                key = name[1:][0]  # Первая буква после :
+                pseudo_headers[key] = (name, value)
+            else:
+                regular_headers[name] = value
+        
+        # Сортировка согласно профилю
+        ordered_headers = []
+        
+        for key in order:
+            if key in pseudo_headers:
+                ordered_headers.append(pseudo_headers[key])
+        
+        # Добавление обычных заголовков
+        for name, value in regular_headers.items():
+            ordered_headers.append((name, value))
+            
+        return ordered_headers</pre>
+                </div>
+
+                <h3>🔄 Настройка iptables для прозрачного проксирования</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Bash - iptables_setup.sh</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>#!/bin/bash
+
+# Цвета для вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${GREEN}🔧 Настройка iptables для FingerprintRouter${NC}"
+
+# Очистка существующих правил
+iptables -t nat -F
+iptables -t mangle -F
+iptables -t filter -F
+
+# Создание новых цепочек
+iptables -t nat -N FINGERPRINT_ROUTER 2>/dev/null || true
+iptables -t mangle -N FINGERPRINT_MARK 2>/dev/null || true
+
+# Перенаправление HTTP/HTTPS трафика
+iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443
+
+# Маркировка пакетов для модификации
+iptables -t mangle -A PREROUTING -p tcp -j FINGERPRINT_MARK
+iptables -t mangle -A FINGERPRINT_MARK -j MARK --set-mark 100
+
+# Исключение локального трафика
+iptables -t nat -A PREROUTING -d 127.0.0.0/8 -j RETURN
+iptables -t nat -A PREROUTING -d 192.168.0.0/16 -j RETURN
+iptables -t nat -A PREROUTING -d 10.0.0.0/8 -j RETURN
+
+# Правила для OUTPUT (локальный трафик)
+iptables -t nat -A OUTPUT -p tcp --dport 80 -m owner ! --uid-owner proxy -j REDIRECT --to-port 8080
+iptables -t nat -A OUTPUT -p tcp --dport 443 -m owner ! --uid-owner proxy -j REDIRECT --to-port 8443
+
+# Сохранение правил
+iptables-save > /etc/iptables/rules.v4
+
+echo -e "${GREEN}✅ iptables настроены успешно${NC}"</pre>
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep(6)">
+                    Далее: Интеграция прокси →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 6: Интеграция прокси -->
+        <div class="step-content" id="step-6">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🔗</div>
+                    <h2>Интеграция с пакетом прокси</h2>
+                </div>
+
+                <h3>📦 Proxy Manager - Управление пулом прокси</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - proxy_manager.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>import asyncio
+import aiohttp
+import random
+from typing import List, Dict, Optional
+from dataclasses import dataclass
+from loguru import logger
+import json
+
+@dataclass
+class Proxy:
+    """Класс для хранения информации о прокси"""
+    host: str
+    port: int
+    username: Optional[str] = None
+    password: Optional[str] = None
+    protocol: str = "http"
+    country: Optional[str] = None
+    speed_ms: Optional[int] = None
+    alive: bool = True
+    failures: int = 0
+    
+    @property
+    def url(self):
+        if self.username and self.password:
+            return f"{self.protocol}://{self.username}:{self.password}@{self.host}:{self.port}"
+        return f"{self.protocol}://{self.host}:{self.port}"
+
+class ProxyManager:
+    def __init__(self, config_file="config/proxies.txt"):
+        self.proxies: List[Proxy] = []
+        self.active_proxies: List[Proxy] = []
+        self.config_file = config_file
+        self.rotation_strategy = "round_robin"  # round_robin, random, least_used, fastest
+        self.current_index = 0
+        self.usage_stats = {}
+        self.check_interval = 300  # 5 минут
+        
+        logger.info("🔌 Инициализация ProxyManager")
+        
+    async def load_proxies(self):
+        """Загрузка прокси из файла"""
+        try:
+            with open(self.config_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        proxy = self.parse_proxy_line(line)
+                        if proxy:
+                            self.proxies.append(proxy)
+                            
+            logger.info(f"📋 Загружено {len(self.proxies)} прокси")
+            
+            # Проверка прокси при загрузке
+            await self.check_all_proxies()
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки прокси: {e}")
+            
+    def parse_proxy_line(self, line: str) -> Optional[Proxy]:
+        """Парсинг строки прокси"""
+        # Формат: protocol://username:password@host:port:country
+        # Или: host:port:username:password
+        
+        try:
+            if "://" in line:
+                # URL формат
+                parts = line.split("://")
+                protocol = parts[0]
+                rest = parts[1]
+                
+                if "@" in rest:
+                    auth, server = rest.split("@")
+                    username, password = auth.split(":")
+                    host, port = server.split(":")
+                else:
+                    username = password = None
+                    host, port = rest.split(":")
+            else:
+                # Простой формат
+                parts = line.split(":")
+                if len(parts) == 4:
+                    host, port, username, password = parts
+                    protocol = "http"
+                elif len(parts) == 2:
+                    host, port = parts
+                    username = password = None
+                    protocol = "http"
+                else:
+                    return None
+                    
+            return Proxy(
+                host=host,
+                port=int(port),
+                username=username,
+                password=password,
+                protocol=protocol
+            )
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось распарсить прокси: {line}")
+            return None
+            
+    async def check_proxy(self, proxy: Proxy) -> bool:
+        """Проверка работоспособности прокси"""
+        test_url = "http://httpbin.org/ip"
+        timeout = aiohttp.ClientTimeout(total=10)
+        
+        try:
+            start_time = asyncio.get_event_loop().time()
+            
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(test_url, proxy=proxy.url) as response:
+                    if response.status == 200:
+                        elapsed = int((asyncio.get_event_loop().time() - start_time) * 1000)
+                        proxy.speed_ms = elapsed
+                        proxy.alive = True
+                        proxy.failures = 0
+                        
+                        # Определение страны по IP
+                        data = await response.json()
+                        logger.debug(f"✅ Прокси {proxy.host}:{proxy.port} работает ({elapsed}ms)")
+                        return True
+                        
+        except Exception as e:
+            proxy.failures += 1
+            if proxy.failures >= 3:
+                proxy.alive = False
+            logger.debug(f"❌ Прокси {proxy.host}:{proxy.port} недоступен: {e}")
+            
+        return False
+        
+    async def check_all_proxies(self):
+        """Проверка всех прокси"""
+        logger.info("🔍 Проверка всех прокси...")
+        
+        tasks = [self.check_proxy(proxy) for proxy in self.proxies]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        self.active_proxies = [
+            proxy for proxy, result in zip(self.proxies, results)
+            if proxy.alive
+        ]
+        
+        logger.info(f"✅ Активных прокси: {len(self.active_proxies)}/{len(self.proxies)}")
+        
+    async def get_proxy(self) -> Optional[Proxy]:
+        """Получение прокси согласно стратегии ротации"""
+        if not self.active_proxies:
+            logger.error("❌ Нет доступных прокси")
+            return None
+            
+        if self.rotation_strategy == "round_robin":
+            proxy = self.active_proxies[self.current_index]
+            self.current_index = (self.current_index + 1) % len(self.active_proxies)
+            
+        elif self.rotation_strategy == "random":
+            proxy = random.choice(self.active_proxies)
+            
+        elif self.rotation_strategy == "least_used":
+            proxy = min(self.active_proxies, 
+                       key=lambda p: self.usage_stats.get(p.url, 0))
+                       
+        elif self.rotation_strategy == "fastest":
+            proxies_with_speed = [p for p in self.active_proxies if p.speed_ms]
+            if proxies_with_speed:
+                proxy = min(proxies_with_speed, key=lambda p: p.speed_ms)
+            else:
+                proxy = random.choice(self.active_proxies)
+        else:
+            proxy = self.active_proxies[0]
+            
+        # Обновление статистики
+        self.usage_stats[proxy.url] = self.usage_stats.get(proxy.url, 0) + 1
+        
+        return proxy
+        
+    async def start_monitoring(self):
+        """Запуск мониторинга прокси"""
+        while True:
+            await asyncio.sleep(self.check_interval)
+            await self.check_all_proxies()
+            
+    def get_statistics(self) -> Dict:
+        """Получение статистики использования прокси"""
+        return {
+            "total": len(self.proxies),
+            "active": len(self.active_proxies),
+            "failed": len([p for p in self.proxies if not p.alive]),
+            "usage_stats": self.usage_stats,
+            "fastest_proxy": min(self.active_proxies, key=lambda p: p.speed_ms or 999999).url if self.active_proxies else None,
+            "rotation_strategy": self.rotation_strategy
+        }</pre>
+                </div>
+
+                <h3>🔧 Формат файла прокси</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Text - proxies.txt</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre># Формат 1: protocol://username:password@host:port
+http://user1:pass1@proxy1.example.com:8080
+https://user2:pass2@proxy2.example.com:3128
+socks5://user3:pass3@proxy3.example.com:1080
+
+# Формат 2: host:port:username:password  
+proxy4.example.com:8080:user4:pass4
+proxy5.example.com:3128:user5:pass5
+
+# Формат 3: host:port (без авторизации)
+proxy6.example.com:8080
+proxy7.example.com:3128
+
+# Можно добавлять комментарии с #
+# Пустые строки игнорируются</pre>
+                </div>
+
+                <h3>🎛️ REST API для управления</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - rest_api.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, List
+import json
+
+app = FastAPI(title="FingerprintRouter API", version="1.0.0")
+
+# CORS для веб-интерфейса
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class ProfileRequest(BaseModel):
+    tcp_profile: Optional[str] = "windows_10"
+    ja3_profile: Optional[str] = "chrome_120"
+    h2_profile: Optional[str] = "chrome_120"
+
+class ProxyRequest(BaseModel):
+    proxies: List[str]
+    rotation_strategy: Optional[str] = "round_robin"
+
+@app.get("/")
+async def root():
+    return {
+        "name": "FingerprintRouter",
+        "version": "1.0.0",
+        "status": "running"
+    }
+
+@app.get("/api/status")
+async def get_status():
+    """Получение статуса системы"""
+    return {
+        "active_connections": router.get_active_connections(),
+        "proxy_stats": router.proxy_manager.get_statistics(),
+        "profiles": {
+            "tcp": router.tcp_handler.current_profile,
+            "ja3": router.tls_handler.current_profile,
+            "h2": router.http2_handler.current_profile
+        }
+    }
+
+@app.post("/api/profile")
+async def set_profile(request: ProfileRequest):
+    """Установка профилей отпечатков"""
+    try:
+        router.tcp_handler.current_profile = request.tcp_profile
+        router.tls_handler.current_profile = request.ja3_profile
+        router.http2_handler.current_profile = request.h2_profile
+        
+        return {
+            "status": "success",
+            "profiles": {
+                "tcp": request.tcp_profile,
+                "ja3": request.ja3_profile,
+                "h2": request.h2_profile
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/proxies")
+async def update_proxies(request: ProxyRequest):
+    """Обновление списка прокси"""
+    try:
+        # Сохранение прокси в файл
+        with open("config/proxies.txt", "w") as f:
+            for proxy in request.proxies:
+                f.write(proxy + "\n")
+                
+        # Перезагрузка прокси
+        await router.proxy_manager.load_proxies()
+        
+        # Установка стратегии ротации
+        router.proxy_manager.rotation_strategy = request.rotation_strategy
+        
+        return {
+            "status": "success",
+            "loaded": len(router.proxy_manager.proxies),
+            "active": len(router.proxy_manager.active_proxies)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    """WebSocket для стриминга логов"""
+    await websocket.accept()
+    
+    try:
+        while True:
+            # Отправка логов в реальном времени
+            log_data = await log_queue.get()
+            await websocket.send_json(log_data)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+    finally:
+        await websocket.close()</pre>
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep(7)">
+                    Далее: Запуск системы →
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 7: Запуск системы -->
+        <div class="step-content" id="step-7">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">🚀</div>
+                    <h2>Запуск и использование системы</h2>
+                </div>
+
+                <h3>🎯 Финальный скрипт запуска</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Bash - start.sh</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>#!/bin/bash
+
+# Цвета для красивого вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# ASCII Art
+echo -e "${PURPLE}"
+cat << "EOF"
+╔═══════════════════════════════════════════════════════════╗
+║     _____ _                                 _       _     ║
+║    |  ___(_)_ __   __ _  ___ _ __ _ __  _ __(_)_ __ | |_  ║
+║    | |_  | | '_ \ / _` |/ _ \ '__| '_ \| '__| | '_ \| __| ║
+║    |  _| | | | | | (_| |  __/ |  | |_) | |  | | | | | |_  ║
+║    |_|   |_|_| |_|\__, |\___|_|  | .__/|_|  |_|_| |_|\__| ║
+║                   |___/          |_|                       ║
+║                                                            ║
+║           🔐 Multi-threaded Fingerprint Router 🔐         ║
+╚═══════════════════════════════════════════════════════════╝
+EOF
+echo -e "${NC}"
+
+# Проверка прав
+if [ "$EUID" -ne 0 ]; then 
+    echo -e "${RED}❌ Требуются права root. Используйте sudo${NC}"
+    exit 1
+fi
+
+# Функция проверки сервиса
+check_service() {
+    if systemctl is-active --quiet $1; then
+        echo -e "${GREEN}✅ $1 запущен${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ $1 не запущен${NC}"
+        return 1
+    fi
+}
+
+# Функция запуска компонента
+start_component() {
+    local name=$1
+    local cmd=$2
+    echo -e "${YELLOW}⏳ Запуск $name...${NC}"
+    eval $cmd
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ $name запущен успешно${NC}"
+    else
+        echo -e "${RED}❌ Ошибка запуска $name${NC}"
+        exit 1
+    fi
+}
+
+# Проверка зависимостей
+echo -e "${CYAN}📋 Проверка зависимостей...${NC}"
+echo ""
+
+# Проверка Python
+if command -v python3 &> /dev/null; then
+    PYTHON_VERSION=$(python3 --version | cut -d" " -f2)
+    echo -e "${GREEN}✅ Python $PYTHON_VERSION${NC}"
+else
+    echo -e "${RED}❌ Python не установлен${NC}"
+    exit 1
+fi
+
+# Проверка Redis
+check_service redis-server || {
+    echo -e "${YELLOW}⏳ Запуск Redis...${NC}"
+    systemctl start redis-server
+}
+
+# Активация виртуального окружения
+echo ""
+echo -e "${CYAN}🔧 Активация виртуального окружения...${NC}"
+source ~/fingerprint-router/venv/bin/activate
+
+# Применение iptables правил
+echo ""
+echo -e "${CYAN}🔥 Применение iptables правил...${NC}"
+bash iptables_setup.sh
+
+# Запуск основного роутера
+echo ""
+echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║     🚀 ЗАПУСК FINGERPRINT ROUTER 🚀    ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+echo ""
+
+# Запуск в фоновом режиме с supervisor
+cat > /etc/supervisor/conf.d/fingerprint-router.conf << EOL
+[program:fingerprint-router]
+command=/home/ubuntu/fingerprint-router/venv/bin/python /home/ubuntu/fingerprint-router/main.py
+directory=/home/ubuntu/fingerprint-router
+user=root
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/fingerprint-router.err.log
+stdout_logfile=/var/log/fingerprint-router.out.log
+environment=PATH="/home/ubuntu/fingerprint-router/venv/bin"
+EOL
+
+# Перезагрузка supervisor
+supervisorctl reread
+supervisorctl update
+supervisorctl start fingerprint-router
+
+# Запуск API сервера
+echo -e "${CYAN}🌐 Запуск API сервера...${NC}"
+cd ~/fingerprint-router
+nohup uvicorn api.rest_api:app --host 0.0.0.0 --port 8000 --reload > api.log 2>&1 &
+
+# Ожидание запуска
+sleep 3
+
+# Проверка статуса
+echo ""
+echo -e "${CYAN}📊 Проверка статуса системы...${NC}"
+echo ""
+
+# Проверка портов
+netstat -tlnp | grep -E '(8080|8443|8000)' > /dev/null
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Прокси порты активны${NC}"
+    echo -e "   ${CYAN}├─ HTTP:  0.0.0.0:8080${NC}"
+    echo -e "   ${CYAN}├─ HTTPS: 0.0.0.0:8443${NC}"
+    echo -e "   ${CYAN}└─ API:   0.0.0.0:8000${NC}"
+else
+    echo -e "${RED}❌ Порты не активны${NC}"
+fi
+
+# Проверка API
+API_STATUS=$(curl -s http://localhost:8000/ | jq -r '.status' 2>/dev/null)
+if [ "$API_STATUS" == "running" ]; then
+    echo -e "${GREEN}✅ API сервер работает${NC}"
+else
+    echo -e "${RED}❌ API сервер не отвечает${NC}"
+fi
+
+echo ""
+echo -e "${GREEN}╔════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║        🎉 СИСТЕМА УСПЕШНО ЗАПУЩЕНА! 🎉             ║${NC}"
+echo -e "${GREEN}╠════════════════════════════════════════════════════╣${NC}"
+echo -e "${GREEN}║                                                     ║${NC}"
+echo -e "${GREEN}║  📡 Прокси:    http://192.168.200.10:8080         ║${NC}"
+echo -e "${GREEN}║  🔒 HTTPS:     https://192.168.200.10:8443        ║${NC}"
+echo -e "${GREEN}║  🌐 API:       http://192.168.200.10:8000         ║${NC}"
+echo -e "${GREEN}║  📚 Docs:      http://192.168.200.10:8000/docs    ║${NC}"
+echo -e "${GREEN}║                                                     ║${NC}"
+echo -e "${GREEN}║  📊 Мониторинг: tail -f /var/log/fingerprint-*    ║${NC}"
+echo -e "${GREEN}║  🛑 Остановка:  sudo supervisorctl stop all       ║${NC}"
+echo -e "${GREEN}║                                                     ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════╝${NC}"
+
+# Запуск мониторинга в реальном времени (опционально)
+read -p "Хотите запустить мониторинг в реальном времени? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    tail -f /var/log/fingerprint-router.out.log
+fi</pre>
+                </div>
+
+                <h3>🎮 Web интерфейс управления</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">HTML - dashboard.html</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="ru"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;title&gt;FingerprintRouter Dashboard&lt;/title&gt;
+    &lt;style&gt;
+        /* Современный дизайн дашборда */
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+        }
+        .dashboard { 
+            max-width: 1200px; 
+            margin: 50px auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        /* ... остальные стили ... */
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="dashboard"&gt;
+        &lt;h1&gt;🔐 FingerprintRouter Control Panel&lt;/h1&gt;
+        
+        &lt;!-- Статус системы --&gt;
+        &lt;div class="status-panel"&gt;
+            &lt;h2&gt;Статус системы&lt;/h2&gt;
+            &lt;div id="system-status"&gt;Загрузка...&lt;/div&gt;
+        &lt;/div&gt;
+        
+        &lt;!-- Управление профилями --&gt;
+        &lt;div class="profile-panel"&gt;
+            &lt;h2&gt;Профили отпечатков&lt;/h2&gt;
+            &lt;select id="tcp-profile"&gt;
+                &lt;option value="windows_10"&gt;Windows 10&lt;/option&gt;
+                &lt;option value="macos"&gt;macOS&lt;/option&gt;
+                &lt;option value="android"&gt;Android&lt;/option&gt;
+                &lt;option value="ios"&gt;iOS&lt;/option&gt;
+            &lt;/select&gt;
+            &lt;button onclick="updateProfiles()"&gt;Применить&lt;/button&gt;
+        &lt;/div&gt;
+        
+        &lt;!-- Статистика прокси --&gt;
+        &lt;div class="proxy-stats"&gt;
+            &lt;h2&gt;Статистика прокси&lt;/h2&gt;
+            &lt;div id="proxy-stats"&gt;Загрузка...&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    
+    &lt;script&gt;
+        const API_URL = 'http://192.168.200.10:8000';
+        
+        async function loadStatus() {
+            const response = await fetch(`${API_URL}/api/status`);
+            const data = await response.json();
+            document.getElementById('system-status').innerHTML = JSON.stringify(data, null, 2);
+        }
+        
+        async function updateProfiles() {
+            const tcpProfile = document.getElementById('tcp-profile').value;
+            
+            const response = await fetch(`${API_URL}/api/profile`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    tcp_profile: tcpProfile,
+                    ja3_profile: 'chrome_120',
+                    h2_profile: 'chrome_120'
+                })
+            });
+            
+            if (response.ok) {
+                alert('Профили обновлены!');
+                loadStatus();
+            }
+        }
+        
+        // Автообновление каждые 5 секунд
+        setInterval(loadStatus, 5000);
+        loadStatus();
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+                </div>
+
+                <h3>✅ Тестирование системы</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-lang">Python - test_system.py</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+                    </div>
+                    <pre>#!/usr/bin/env python3
+"""
+Скрипт для тестирования FingerprintRouter
+"""
+
+import requests
+import json
+from termcolor import colored
+
+def test_fingerprints():
+    """Тестирование отпечатков через различные сервисы"""
+    
+    proxy = {
+        'http': 'http://192.168.200.10:8080',
+        'https': 'http://192.168.200.10:8443'
+    }
+    
+    tests = [
+        {
+            'name': 'JA3 Fingerprint',
+            'url': 'https://ja3er.com/json',
+            'check': 'ja3_hash'
+        },
+        {
+            'name': 'HTTP/2 Fingerprint',
+            'url': 'https://tls.browserleaks.com/json',
+            'check': 'http2'
+        },
+        {
+            'name': 'TCP Fingerprint',
+            'url': 'http://www.speedguide.net:8080/',
+            'check': 'os_fingerprint'
+        }
+    ]
+    
+    print(colored("🧪 Тестирование отпечатков", "cyan", attrs=['bold']))
+    print("-" * 50)
+    
+    for test in tests:
+        try:
+            print(f"\n📋 Тест: {test['name']}")
+            response = requests.get(test['url'], proxies=proxy, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json() if 'json' in test['url'] else response.text
+                print(colored(f"✅ Успешно", "green"))
+                
+                if isinstance(data, dict) and test['check'] in data:
+                    print(f"   Результат: {data[test['check']]}")
+            else:
+                print(colored(f"❌ Ошибка: {response.status_code}", "red"))
+                
+        except Exception as e:
+            print(colored(f"❌ Ошибка: {e}", "red"))
+    
+    print("\n" + "=" * 50)
+    print(colored("✨ Тестирование завершено!", "green", attrs=['bold']))
+
+if __name__ == "__main__":
+    test_fingerprints()</pre>
+                </div>
+
+                <div class="alert alert-success">
+                    🎉 <strong>Поздравляем!</strong> Система FingerprintRouter успешно установлена и настроена!
+                </div>
+
+                <h3>📚 Дополнительные ресурсы</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📖</div>
+                        <div class="feature-title">Документация</div>
+                        <div>Подробная документация API и примеры использования</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🛠️</div>
+                        <div class="feature-title">Troubleshooting</div>
+                        <div>Решение типичных проблем и FAQ</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-title">Мониторинг</div>
+                        <div>Grafana дашборды и метрики Prometheus</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    💡 <strong>Совет:</strong> Для максимальной эффективности используйте резидентные прокси с ротацией IP и регулярно обновляйте профили отпечатков.
+                </div>
+
+                <div style="text-align: center; margin-top: 3rem;">
+                    <button class="btn btn-primary" onclick="showStep(1)">
+                        ↻ Начать сначала
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.print()">
+                        🖨️ Распечатать инструкцию
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Управление шагами
+        function showStep(stepNumber) {
+            // Скрыть все шаги
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Показать выбранный шаг
+            document.getElementById(`step-${stepNumber}`).classList.add('active');
+            
+            // Обновить прогресс-бар
+            document.querySelectorAll('.progress-step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index + 1 < stepNumber) {
+                    step.classList.add('completed');
+                } else if (index + 1 === stepNumber) {
+                    step.classList.add('active');
+                }
+            });
+            
+            // Прокрутка вверх
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Управление табами
+        function showTab(evt, tabName) {
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+        
+        // Копирование кода
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('pre').textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                button.textContent = 'Скопировано!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = 'Копировать';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        // Анимация при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            // Добавление анимации для карточек
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+            
+            // Интерактивность для install-step
+            const installSteps = document.querySelectorAll('.install-step');
+            installSteps.forEach(step => {
+                step.addEventListener('click', function() {
+                    this.classList.toggle('completed');
+                    const status = this.querySelector('.step-status');
+                    if (status) {
+                        status.classList.toggle('completed');
+                    }
+                });
+            });
+        });
+        
+        // Горячие клавиши
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                const activeStep = document.querySelector('.progress-step.active');
+                const nextStep = activeStep?.nextElementSibling;
+                if (nextStep) {
+                    const stepNumber = Array.from(document.querySelectorAll('.progress-step')).indexOf(nextStep) + 1;
+                    showStep(stepNumber);
+                }
+            } else if (e.key === 'ArrowLeft') {
+                const activeStep = document.querySelector('.progress-step.active');
+                const prevStep = activeStep?.previousElementSibling;
+                if (prevStep) {
+                    const stepNumber = Array.from(document.querySelectorAll('.progress-step')).indexOf(prevStep) + 1;
+                    showStep(stepNumber);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
